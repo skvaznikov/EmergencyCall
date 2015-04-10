@@ -3,14 +3,19 @@ package com.akvilonsoft.emergencycall;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.telephony.SmsManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,11 +25,17 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
 
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Locale;
+
 
 public class MainActivity extends ActionBarActivity  {
     private static GoogleMap mMap;
     public static FragmentManager fragmentManager;
-    private static Double latitude, longitude;
+    private static Double latitude=0.0, longitude=0.0, longitudenew, latitudenew;
+    private long begin, end;
     private Context context;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,7 +98,7 @@ public class MainActivity extends ActionBarActivity  {
         }
 
         mMap.setMyLocationEnabled(true);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney, 20));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney, 10));
 
         mMap.addMarker(new MarkerOptions()
                 .title("My home")
@@ -138,7 +149,7 @@ public class MainActivity extends ActionBarActivity  {
         mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)).title("My Home").snippet("Home Address"));
         // For zooming automatically to the Dropped PIN Location
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude,
-                longitude), 12.0f));
+                longitude), 6.0f));
     }
 
     public void getLocation(View v) {
@@ -164,12 +175,48 @@ public class MainActivity extends ActionBarActivity  {
             @Override
             public void onLocationChanged(Location location) {
                 Toast.makeText(context, "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
-                longitude = location.getLongitude();
-                latitude = location.getLatitude();
-                goHome();
+                longitudenew = location.getLongitude();
+                latitudenew = location.getLatitude();
+                if (longitudenew - longitude > 0.00010 || latitude - latitudenew > 0.00010) {
+                    longitude = longitudenew;
+                    latitude = latitudenew;
+                    goHome();
+                    begin = System.currentTimeMillis();
+                }
+                else {
+                        if (System.currentTimeMillis() -  begin > 20000) {
+                       //     Intent i = new Intent(Intent.ACTION_SEND);
+                       //     i.putExtra("address","00491775820007");
+                            Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+                            // Vibrate for 500 milliseconds
+                            v.vibrate(500);
+                            Geocoder geocoder = new Geocoder(context, Locale.GERMANY);
+                            String street= "";
+                            try {
+                                List<Address> adresse = geocoder.getFromLocation(latitudenew, longitudenew, 1);
+                                street = adresse.get(0).getAddressLine(0);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            SmsManager sms = SmsManager.getDefault();
+                            sms.sendTextMessage("00491775820007", null, "Hilfe: " + street, null, null);
+                       //     i.putExtra("sms_body", "Hilfe: " + street);
+                      //      Uri uri = Uri.parse("content://media/external/images/media/1");
+                       //     i.putExtra(Intent.EXTRA_STREAM, uri);
+                      //      i.setType("image/bmp");
+                     //       startActivity(i);
+
+                            Intent phoneIntent = new Intent(Intent.ACTION_CALL);
+
+                            phoneIntent.setData(Uri.parse("tel:00491775820007"));
+                            startActivity(phoneIntent);
+                        }
+                }
+
+
             }
         };
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1f, locListener);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000L, 1f, locListener);
    //     locationManager.requestLocationUpdates(
    //             LocationManager.GPS_PROVIDER, 1000, 1, locListener);
   //      mobileLocation = locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -199,6 +246,15 @@ public class MainActivity extends ActionBarActivity  {
             gps.showSettingsAlert();
 
         }*/
+    }
+
+    private Bitmap getScreen() {
+        Bitmap bitmap;
+        View v1 = getWindow().getDecorView().findViewById(android.R.id.content);
+        v1.setDrawingCacheEnabled(true);
+        bitmap = Bitmap.createBitmap(v1.getDrawingCache());
+        v1.setDrawingCacheEnabled(false);
+        return bitmap;
     }
 
 

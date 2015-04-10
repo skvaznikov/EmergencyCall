@@ -4,5 +4,7 @@
     <string name="app_name">EmergencyCall</string>
     <string name="hello_round">Hello Round World!</string>
     <string name="hello_square">Hello Square World!</string>
+    <string name="title_activity_watch">WatchActivity</string>
+    <string name="btnLocation">Get Location</string>
 
 </resources>
