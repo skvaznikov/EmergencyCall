@@ -4,5 +4,11 @@
     <string name="app_name">Emergency Call</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="gps_network_not_enabled">Netzwerk ist deaktiviert</string>
+    <string name="open_location_settings">Die Einstellungen öffnen</string>
+    <string name="Cancel">Beenden</string>
+    <string name="question_disable">Soll der Hilferuf deaktiviert werden?</string>
+    <string name="yes">Ja</string>
+    <string name="no">Nein</string>
 
 </resources>
