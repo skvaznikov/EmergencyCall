@@ -208,9 +208,9 @@ public class MainActivity extends ActionBarActivity  {
         } else {
             location = locationNet;
         }
-   //     location = new Location("Home");
-   //     location.setLatitude(50);
-   //     location.setLongitude(8);
+        location = new Location("Home");
+       location.setLatitude(50);
+        location.setLongitude(8);
         if (location != null) {
             Toast.makeText(context, "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
             longitudenew = location.getLongitude();
