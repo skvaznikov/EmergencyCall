@@ -91,7 +91,8 @@ public class SettingsActivity extends PreferenceActivity {
         bindPreferenceSummaryToValue(findPreference("example_list"));
         bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
         bindPreferenceSummaryToValue(findPreference("sync_frequency"));
-       Preference myPref = (Preference) findPreference("example_text");
+       Preference myPref = findPreference("example_text");
+        Preference amountSec = findPreference("example_list");
 
         myPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
@@ -102,6 +103,14 @@ public class SettingsActivity extends PreferenceActivity {
             }
         });
         myPref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                preference.setDefaultValue(newValue);
+                return true;
+            }
+        });
+
+        amountSec.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 preference.setDefaultValue(newValue);

@@ -25,6 +25,8 @@ import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
@@ -56,6 +58,8 @@ public class MainActivity extends ActionBarActivity  {
     private Handler guiHandler = new Handler();
     private MediaPlayer mPlayer;
     int zaehler = 0;
+    boolean makeCall = true;
+
     Runnable statusChecker = new Runnable() {
         @Override
         public void run() {
@@ -84,6 +88,8 @@ public class MainActivity extends ActionBarActivity  {
         super.onDestroy();
         stopRepeatingTask();
         if (mPlayer!= null && mPlayer.isPlaying()) mPlayer.stop();
+        setResult(0);
+        finish();
     }
 
 
@@ -212,7 +218,7 @@ public class MainActivity extends ActionBarActivity  {
        location.setLatitude(50);
         location.setLongitude(8);
         if (location != null) {
-            Toast.makeText(context, "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
+  //          Toast.makeText(context, "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
             longitudenew = location.getLongitude();
             latitudenew = location.getLatitude();
             if (counter == 0) goHome();
@@ -223,55 +229,62 @@ public class MainActivity extends ActionBarActivity  {
                 begin = System.currentTimeMillis();
                 return;
             }
-            if (System.currentTimeMillis() - begin > 20000) {
-                if (counter == 0) {
-                    Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-                    // Vibrate for 500 milliseconds
-                    v.vibrate(500);
-                    mPlayer = MediaPlayer.create(MainActivity.this, R.raw.schrei);
-                    //mPlayer.setLooping(true);
-                    mPlayer.start();
-                    mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                        @Override
-                        public void onCompletion(MediaPlayer mp) {
-                            zaehler++;
-                            if (zaehler < 10) {
-                                mPlayer.start();
-                            } else {
-                                mPlayer.stop();
-                            }
-                        }
-                    });
-
-                    AlertDialog.Builder dialog = new AlertDialog.Builder(context);
-                    dialog.setMessage(context.getResources().getString(R.string.question_disable));
-                    dialog.setPositiveButton(context.getResources().getString(R.string.yes), new DialogInterface.OnClickListener() {
-
-                        @Override
-                        public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this);
+            Long amountSec = Long.valueOf(sharedPref.getString("example_list", "10"));
+            if (System.currentTimeMillis() - begin > amountSec*1000L) if (counter == 0) {
+                Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+                // Vibrate for 500 milliseconds
+                v.vibrate(5000);
+                mPlayer = MediaPlayer.create(MainActivity.this, R.raw.schrei);
+                //mPlayer.setLooping(true);
+                mPlayer.start();
+                mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mp) {
+                        zaehler++;
+                        if (zaehler < 10) mPlayer.start();
+                        else {
                             mPlayer.stop();
-                            return;
                         }
-                    });
-                    dialog.setNegativeButton(context.getString(R.string.no), new DialogInterface.OnClickListener() {
+                    }
+                });
 
-                        @Override
-                        public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                            // TODO Auto-generated method stub
+                AlertDialog.Builder dialog = new AlertDialog.Builder(context);
+                dialog.setMessage(context.getResources().getString(R.string.question_disable));
 
-                        }
-                    });
-                    dialog.show();
+                dialog.setPositiveButton(context.getResources().getString(R.string.yes), new DialogInterface.OnClickListener() {
 
-               //     SystemClock.sleep(20000);
+                    @Override
+                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                        mPlayer.stop();
+                        stopRepeatingTask();
+                        makeCall = false;
+                        return;
+                    }
+                });
+                dialog.setNegativeButton(context.getString(R.string.no), new DialogInterface.OnClickListener() {
 
+                    @Override
+                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                        // TODO Auto-generated method stub
+
+                    }
+                });
+                dialog.show();
+
+                //     SystemClock.sleep(20000);
+
+                if (makeCall) {
                     Geocoder geocoder = new Geocoder(context, Locale.GERMANY);
+
                     String street = "";
                     String routingAddress = "";
                     try {
                         List<Address> address = geocoder.getFromLocation(latitudenew, longitudenew, 1);
-                        street = address.get(0).getLocality() + " \n" + address.get(0).getAddressLine(0);
-                        routingAddress = address.get(0).getLocality() + "+" + address.get(0).getAddressLine(0).replace(" ", "+");
+                        if (!address.isEmpty()) {
+                            street = address.get(0).getLocality() + " \n" + address.get(0).getAddressLine(0);
+                            routingAddress = address.get(0).getLocality() + "+" + address.get(0).getAddressLine(0).replace(" ", "+");
+                        }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -281,9 +294,9 @@ public class MainActivity extends ActionBarActivity  {
                     guiHandler.postDelayed(new Runnable() {
                         public void run() {
                             SmsManager sms = SmsManager.getDefault();
-                            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this);
+                            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
                             String phone = sharedPref.getString("example_text", "");
-                           // sms.sendTextMessage(phone, null, "Hilfe: " + finalStreet + "\n" + "http://maps.google.com/?q=" + latitudenew + "," + longitudenew + ",15z", null, null);
+                            // sms.sendTextMessage(phone, null, "Hilfe: " + finalStreet + "\n" + "http://maps.google.com/?q=" + latitudenew + "," + longitudenew + ",15z", null, null);
                             sms.sendTextMessage(phone, null, "Hilfe: " + finalStreet + "\n" + "https://www.google.de/maps/dir/" + finalRoutingAddress + ",+Deutschland/Neue+Gasse+7,+71149+Bondorf/,12z", null, null);
                             Intent phoneIntent = new Intent(Intent.ACTION_CALL);
                             phoneIntent.setData(Uri.parse("tel:" + phone));
@@ -292,10 +305,10 @@ public class MainActivity extends ActionBarActivity  {
                             startActivity(phoneIntent);
                         }
                     }, 20000);
-
-                    counter++;
                 }
-            } else {
+                counter++;
+            }
+            else {
 
             }
         }
@@ -304,5 +317,18 @@ public class MainActivity extends ActionBarActivity  {
 
     public void startRepeatingTask(View view) {
         statusChecker.run();
+        makeCall = true;
+        int notificationId = 001;
+
+        NotificationCompat.Builder notificationBuilder =
+                new NotificationCompat.Builder(MainActivity.this)
+                        .setSmallIcon(R.drawable.ic_launcher)
+                        .setContentTitle("Emergency Call")
+                        .setContentText("Application started");
+
+        NotificationManagerCompat notificationManager =
+                NotificationManagerCompat.from(MainActivity.this);
+
+        notificationManager.notify(notificationId, notificationBuilder.build());
     }
 }
