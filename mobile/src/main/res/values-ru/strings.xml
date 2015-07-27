@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Неотложка</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Установка</string>
+    <string name="gps_network_not_enabled">Сеть деактивирована</string>
+    <string name="open_location_settings">Открыть установки навигации</string>
+    <string name="Cancel">Выход</string>
+    <string name="question_disable">Деактивировать неотложку?</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="position_title">Вы здесь</string>
+    <string name="actual_position">Актуальная позиция</string>
+
+</resources>

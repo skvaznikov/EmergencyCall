@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="position_title">You are here</string>
+    <string name="actual_position">Recent position</string>
+</resources>

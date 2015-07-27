@@ -10,5 +10,7 @@
     <string name="question_disable">Soll der Hilferuf deaktiviert werden?</string>
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
+    <string name="position_title">Sie sind hier</string>
+    <string name="actual_position">Letzte Position</string>
 
 </resources>

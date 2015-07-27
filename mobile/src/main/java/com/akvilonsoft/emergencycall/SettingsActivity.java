@@ -73,32 +73,34 @@ public class SettingsActivity extends PreferenceActivity {
         addPreferencesFromResource(R.xml.pref_general);
 
         // Add 'notifications' preferences, and a corresponding header.
-        PreferenceCategory fakeHeader = new PreferenceCategory(this);
-        fakeHeader.setTitle(R.string.pref_header_notifications);
-        getPreferenceScreen().addPreference(fakeHeader);
-        addPreferencesFromResource(R.xml.pref_notification);
+     //   PreferenceCategory fakeHeader = new PreferenceCategory(this);
+     //   fakeHeader.setTitle(R.string.pref_header_notifications);
+     //   getPreferenceScreen().addPreference(fakeHeader);
+     //   addPreferencesFromResource(R.xml.pref_notification);
 
         // Add 'data and sync' preferences, and a corresponding header.
-        fakeHeader = new PreferenceCategory(this);
-        fakeHeader.setTitle(R.string.pref_header_data_sync);
-        getPreferenceScreen().addPreference(fakeHeader);
-        addPreferencesFromResource(R.xml.pref_data_sync);
+    //    fakeHeader = new PreferenceCategory(this);
+   //     fakeHeader.setTitle(R.string.pref_header_data_sync);
+   //     getPreferenceScreen().addPreference(fakeHeader);
+   //     addPreferencesFromResource(R.xml.pref_data_sync);
 
         // Bind the summaries of EditText/List/Dialog/Ringtone preferences to
         // their values. When their values change, their summaries are updated
         // to reflect the new value, per the Android Design guidelines.
         bindPreferenceSummaryToValue(findPreference("example_text"));
         bindPreferenceSummaryToValue(findPreference("example_list"));
-        bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
-        bindPreferenceSummaryToValue(findPreference("sync_frequency"));
+      //  bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+      //  bindPreferenceSummaryToValue(findPreference("sync_frequency"));
        Preference myPref = findPreference("example_text");
         Preference amountSec = findPreference("example_list");
 
         myPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
-                Intent intent = new Intent(Intent.ACTION_PICK);
-                intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
+                Intent intent = new Intent(Intent.ACTION_PICK, Uri.parse("content://contacts"));
+                intent.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE); // Show user only contacts w/ phone numbers
                 startActivityForResult(intent, 1);
+                //intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
+            //    startActivityForResult(intent, 1);
                 return true;
             }
         });
@@ -127,24 +129,29 @@ public class SettingsActivity extends PreferenceActivity {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
                 Uri contactUri = data.getData();
-                data.getDataString();
-                data.getType();
+        //        data.getDataString();
+        //        data.getType();
                 // We only need the NUMBER column, because there will be only one row in the result
                 String[] projection = {ContactsContract.CommonDataKinds.Nickname.NAME};
                 ContentResolver cr = getContentResolver();
-                Cursor cursor = cr.query(
-                        contactUri, null, null, null, null);
+ //               Cursor cursor = cr.query(
+//                       contactUri, null, null, null, null);
                 // Perform the query on the contact to get the NUMBER column
                 // We don't need a selection or sort order (there's only one result for the given URI)
                 // CAUTION: The query() method should be called from a separate thread to avoid blocking
                 // your app's UI thread. (For simplicity of the sample, this code doesn't do that.)
-                // Consider using CursorLoader to perform the query.
-        //        Cursor cursor1 = getContentResolver().query(contactUri, projection, null, null, null);
-                cursor.moveToFirst();
-                String contactId =
-                        cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                Cursor phones = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
+                // Consider using CursorLoader to perform the query.rhode island
+
+                //Cursor cursor = getContentResolver().query(contactUri, projection, null, null, null);
+                Cursor phones = getContentResolver()
+                        .query(contactUri, projection, null, null, null);
+                phones.moveToFirst();
+
+
+   //             String contactId =
+   //                     cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+   //             Cursor phones = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+   //                     ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + contactId, null, null);
                 // Retrieve the phone number from the NUMBER column
                 int column = phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
                 phones.moveToFirst();
@@ -230,7 +237,7 @@ public class SettingsActivity extends PreferenceActivity {
                 // using RingtoneManager.
                 if (TextUtils.isEmpty(stringValue)) {
                     // Empty values correspond to 'silent' (no ringtone).
-                    preference.setSummary(R.string.pref_ringtone_silent);
+  //                  preference.setSummary(R.string.pref_ringtone_silent);
 
                 } else {
                     Ringtone ringtone = RingtoneManager.getRingtone(
@@ -301,12 +308,12 @@ public class SettingsActivity extends PreferenceActivity {
      * This fragment shows notification preferences only. It is used when the
      * activity is showing a two-pane settings UI.
      */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    /**    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class NotificationPreferenceFragment extends PreferenceFragment {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            addPreferencesFromResource(R.xml.pref_notification);
+      //      addPreferencesFromResource(R.xml.pref_notification);
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences
             // to their values. When their values change, their summaries are
@@ -314,13 +321,13 @@ public class SettingsActivity extends PreferenceActivity {
             // guidelines.
             bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
         }
-    }
+    }*/
 
     /**
      * This fragment shows data and sync preferences only. It is used when the
      * activity is showing a two-pane settings UI.
      */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+/** @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static class DataSyncPreferenceFragment extends PreferenceFragment {
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -333,5 +340,5 @@ public class SettingsActivity extends PreferenceActivity {
             // guidelines.
             bindPreferenceSummaryToValue(findPreference("sync_frequency"));
         }
-    }
+    }*/
 }

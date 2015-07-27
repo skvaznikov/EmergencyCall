@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Emergency Call</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="gps_network_not_enabled">Network deactivated</string>
+    <string name="open_location_settings">Open the location settings</string>
+    <string name="Cancel">Cancel</string>
+    <string name="question_disable">Deactivate emergency call?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="position_title">You are here</string>
+    <string name="actual_position">Recent position</string>
+
+</resources>

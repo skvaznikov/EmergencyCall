@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
@@ -31,6 +33,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -59,6 +62,8 @@ public class MainActivity extends ActionBarActivity  {
     private MediaPlayer mPlayer;
     int zaehler = 0;
     boolean makeCall = true;
+    Locale current;
+    long amountSec;
 
     Runnable statusChecker = new Runnable() {
         @Override
@@ -69,27 +74,37 @@ public class MainActivity extends ActionBarActivity  {
     };
 
 
-    void stopRepeatingTask() {
+    public void stopRepeatingTask(View view) {
         handler.removeCallbacks(statusChecker);
+        counter = 0;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Resources res = getResources();
+        DisplayMetrics dm = res.getDisplayMetrics();
+        current = getResources().getConfiguration().locale;
+        Locale.setDefault(current);
+        Configuration conf = res.getConfiguration();
+        conf.locale = current;
+        res.updateConfiguration(conf, dm);
         setContentView(R.layout.activity_main);
         fragmentManager = getSupportFragmentManager();
         context = MainActivity.this;
         handler = new Handler();
         turnGPSOn();
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this);
+        amountSec= Long.valueOf(sharedPref.getString("example_list", "10"));
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        stopRepeatingTask();
+        stopRepeatingTask(this.findViewById(android.R.id.content));
         if (mPlayer!= null && mPlayer.isPlaying()) mPlayer.stop();
         setResult(0);
-        finish();
+        QuitApplication();
     }
 
 
@@ -176,8 +191,8 @@ public class MainActivity extends ActionBarActivity  {
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 10));
 
         mMap.addMarker(new MarkerOptions()
-                .title("You are here")
-                .snippet("Recent position")
+                .title(getString(R.string.position_title))
+                .snippet(getString(R.string.actual_position))
                 .position(latLng));
         mMap.setTrafficEnabled(true);
     }
@@ -218,7 +233,7 @@ public class MainActivity extends ActionBarActivity  {
        location.setLatitude(50);
         location.setLongitude(8);
         if (location != null) {
-  //          Toast.makeText(context, "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
+            Toast.makeText(context, "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
             longitudenew = location.getLongitude();
             latitudenew = location.getLatitude();
             if (counter == 0) goHome();
@@ -229,20 +244,18 @@ public class MainActivity extends ActionBarActivity  {
                 begin = System.currentTimeMillis();
                 return;
             }
-            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this);
-            Long amountSec = Long.valueOf(sharedPref.getString("example_list", "10"));
-            if (System.currentTimeMillis() - begin > amountSec*1000L) if (counter == 0) {
+
+            if ((System.currentTimeMillis() - begin > amountSec*1000L) && (counter == 0)) {
+                notifyWear();
                 Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-                // Vibrate for 500 milliseconds
                 v.vibrate(5000);
                 mPlayer = MediaPlayer.create(MainActivity.this, R.raw.schrei);
-                //mPlayer.setLooping(true);
                 mPlayer.start();
                 mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                     @Override
                     public void onCompletion(MediaPlayer mp) {
                         zaehler++;
-                        if (zaehler < 10) mPlayer.start();
+                        if (zaehler < 20) mPlayer.start();
                         else {
                             mPlayer.stop();
                         }
@@ -251,84 +264,86 @@ public class MainActivity extends ActionBarActivity  {
 
                 AlertDialog.Builder dialog = new AlertDialog.Builder(context);
                 dialog.setMessage(context.getResources().getString(R.string.question_disable));
-
                 dialog.setPositiveButton(context.getResources().getString(R.string.yes), new DialogInterface.OnClickListener() {
 
                     @Override
                     public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                        mPlayer.stop();
-                        stopRepeatingTask();
-                        makeCall = false;
-                        return;
-                    }
-                });
-                dialog.setNegativeButton(context.getString(R.string.no), new DialogInterface.OnClickListener() {
-
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                        // TODO Auto-generated method stub
-
+                        if (mPlayer.isPlaying()) mPlayer.stop();
+                        stopRepeatingTask(getWindow().findViewById(android.R.id.content));
+                        QuitApplication();
                     }
                 });
                 dialog.show();
-
-                //     SystemClock.sleep(20000);
-
-                if (makeCall) {
-                    Geocoder geocoder = new Geocoder(context, Locale.GERMANY);
-
-                    String street = "";
-                    String routingAddress = "";
-                    try {
-                        List<Address> address = geocoder.getFromLocation(latitudenew, longitudenew, 1);
-                        if (!address.isEmpty()) {
-                            street = address.get(0).getLocality() + " \n" + address.get(0).getAddressLine(0);
-                            routingAddress = address.get(0).getLocality() + "+" + address.get(0).getAddressLine(0).replace(" ", "+");
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    final String finalStreet = street;
-                    final String finalRoutingAddress = routingAddress;
-                    guiHandler.postDelayed(new Runnable() {
-                        public void run() {
-                            SmsManager sms = SmsManager.getDefault();
-                            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
-                            String phone = sharedPref.getString("example_text", "");
-                            // sms.sendTextMessage(phone, null, "Hilfe: " + finalStreet + "\n" + "http://maps.google.com/?q=" + latitudenew + "," + longitudenew + ",15z", null, null);
-                            sms.sendTextMessage(phone, null, "Hilfe: " + finalStreet + "\n" + "https://www.google.de/maps/dir/" + finalRoutingAddress + ",+Deutschland/Neue+Gasse+7,+71149+Bondorf/,12z", null, null);
-                            Intent phoneIntent = new Intent(Intent.ACTION_CALL);
-                            phoneIntent.setData(Uri.parse("tel:" + phone));
-                            AudioManager audioService = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-                            audioService.setSpeakerphoneOn(true);
-                            startActivity(phoneIntent);
-                        }
-                    }, 20000);
-                }
+                makeCall();
                 counter++;
             }
             else {
-
             }
         }
     }
 
+    private void makeCall() {
+        Geocoder geocoder = new Geocoder(context, Locale.GERMANY);
+
+        String street = "";
+        String routingAddress = "";
+        try {
+            List<Address> address = geocoder.getFromLocation(latitudenew, longitudenew, 1);
+            if (!address.isEmpty()) {
+                street = address.get(0).getLocality() + " \n" + address.get(0).getAddressLine(0);
+                routingAddress = address.get(0).getLocality() + "+" + address.get(0).getAddressLine(0).replace(" ", "+");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        final String finalStreet = street;
+        final String finalRoutingAddress = routingAddress;
+        guiHandler.postDelayed(new Runnable() {
+            public void run() {
+                SmsManager sms = SmsManager.getDefault();
+                SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                String phone = sharedPref.getString("example_text", "");
+                sms.sendTextMessage(phone, null, "Hilfe: " + finalStreet + "\n" + "https://www.google.com/maps/dir/" + finalRoutingAddress + ",+Deutschland/Neue+Gasse+7,+71149+Bondorf/,12z", null, null);
+                Intent phoneIntent = new Intent(Intent.ACTION_CALL);
+                phoneIntent.setData(Uri.parse("tel:" + phone));
+                AudioManager audioService = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                audioService.setSpeakerphoneOn(true);
+                startActivity(phoneIntent);
+            }
+        }, 20000);
+    }
+
 
     public void startRepeatingTask(View view) {
+        begin = System.currentTimeMillis();
+        counter=0;
         statusChecker.run();
         makeCall = true;
+    }
+
+    private void notifyWear() {
         int notificationId = 001;
 
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(MainActivity.this)
                         .setSmallIcon(R.drawable.ic_launcher)
                         .setContentTitle("Emergency Call")
-                        .setContentText("Application started");
+                        .setContentText("Emergency Call activated");
 
         NotificationManagerCompat notificationManager =
                 NotificationManagerCompat.from(MainActivity.this);
 
         notificationManager.notify(notificationId, notificationBuilder.build());
+    }
+
+    private void QuitApplication(){
+
+        int pid = android.os.Process.myPid();
+        android.os.Process.killProcess(pid);
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        startActivity(intent);
+
     }
 }

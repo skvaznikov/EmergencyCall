@@ -1,16 +1,15 @@
 <resources>
-    <string name="title_activity_settings">Settings</string>
+    <string name="title_activity_settings">Настройки</string>
 
     <!-- Strings related to Settings -->
 
     <!-- Example General settings -->
-    <string name="pref_header_general">General</string>
+    <string name="pref_header_general">Основные настройки</string>
 
-
-    <string name="pref_number_for_calling">Anruf / SMS an folgende Nummer:</string>
+    <string name="pref_number_for_calling">Позвонить / отослать СМС на следующий номер :</string>
     <string name="pref_default_display_name"></string>
 
-    <string name="pref_amount_of_seconds">Alarm schlagen nach ... Sekunden</string>
+    <string name="pref_amount_of_seconds">Позвонить через ... секунд (ы)</string>
     <string-array name="pref_example_list_titles">
         <item>10</item>
         <item>15</item>
