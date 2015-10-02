@@ -1,6 +1,5 @@
 package com.akvilonsoft.emergencycall;
 
-import android.Manifest;
 import android.app.AlertDialog;
 import android.app.FragmentTransaction;
 import android.content.Context;
@@ -9,70 +8,69 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.SoundPool;
 import android.net.Uri;
-import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
-import android.os.SystemClock;
 import android.os.Vibrator;
-import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.telephony.SmsManager;
-import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.*;
-import com.google.android.gms.maps.model.*;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Locale;
 
 
-public class MainActivity extends ActionBarActivity  {
-    private static GoogleMap mMap;
+public class MainActivity extends ActionBarActivity {
     public static FragmentManager fragmentManager;
-    private static Double latitude=0.0, longitude=0.0, longitudenew, latitudenew;
-    private long begin, end;
-    private Context context;
-    private int counter = 0;
-    private int interval = 5000;
-    private Handler handler;
-    private Handler guiHandler = new Handler();
-    private MediaPlayer mPlayer;
+    private static GoogleMap mMap;
+    private static Double latitude = 0.0, longitude = 0.0, longitudenew, latitudenew;
     int zaehler = 0;
     boolean makeCall = true;
     Locale current;
     long amountSec;
-
+    private long begin;
+    private Context context;
+    private int counter = 0;
+    private Handler handler;
+    private Handler guiHandler = new Handler();
+    private MediaPlayer mPlayer;
     Runnable statusChecker = new Runnable() {
         @Override
         public void run() {
-            handler.postDelayed(statusChecker, interval);
+            handler.postDelayed(statusChecker, 5000);
             checkMoving();
         }
     };
 
+    private static void setUpMap() {
+        mMap.setMyLocationEnabled(true);
+        mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)).title("My Home").snippet("Home Address"));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude,
+                longitude), 6.0f));
+    }
 
     public void stopRepeatingTask(View view) {
         handler.removeCallbacks(statusChecker);
@@ -94,64 +92,56 @@ public class MainActivity extends ActionBarActivity  {
         context = MainActivity.this;
         handler = new Handler();
         turnGPSOn();
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this);
-        amountSec= Long.valueOf(sharedPref.getString("example_list", "10"));
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+        amountSec = Long.valueOf(sharedPref.getString("example_list", "10"));
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         stopRepeatingTask(this.findViewById(android.R.id.content));
-        if (mPlayer!= null && mPlayer.isPlaying()) mPlayer.stop();
+        if (mPlayer != null && mPlayer.isPlaying()) mPlayer.stop();
         setResult(0);
         QuitApplication();
     }
 
-
-    private void turnGPSOn(){
-        LocationManager lm = null;
-        boolean gps_enabled = false,network_enabled = false;
-        if(lm==null)
-            lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        try{
+    private void turnGPSOn() {
+        LocationManager lm;
+        boolean gps_enabled = false, network_enabled = false;
+        lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        try {
             gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        }catch(Exception ex){}
-        try{
             network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        }catch(Exception ex){}
+        } catch (Exception ex) {
+            AlertDialog.Builder dlgWarning = new AlertDialog.Builder(context);
+            dlgWarning.setMessage(context.getResources().getString(R.string.gps_activate_error));
+            dlgWarning.show();
+        }
 
-        if(!gps_enabled && !network_enabled){
+        if (!gps_enabled && !network_enabled) {
             AlertDialog.Builder dialog = new AlertDialog.Builder(context);
             dialog.setMessage(context.getResources().getString(R.string.gps_network_not_enabled));
             dialog.setPositiveButton(context.getResources().getString(R.string.open_location_settings), new DialogInterface.OnClickListener() {
 
                 @Override
                 public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                    // TODO Auto-generated method stub
-                    Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                     context.startActivity(myIntent);
-                    //get gps
                 }
             });
             dialog.setNegativeButton(context.getString(R.string.Cancel), new DialogInterface.OnClickListener() {
 
                 @Override
                 public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                    // TODO Auto-generated method stub
-
                 }
             });
             dialog.show();
-
         }
-        String provider = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
-        //    if(!provider.contains("gps")){ //if gps is disabled
-            final Intent poke = new Intent();
+        final Intent poke = new Intent();
         poke.setClassName("com.android.settings", "com.android.settings.widget.SettingsAppWidgetProvider");
-            poke.addCategory(Intent.CATEGORY_ALTERNATIVE);
-            poke.setData(Uri.parse("3"));
-            sendBroadcast(poke);
-  //      }
+        poke.addCategory(Intent.CATEGORY_ALTERNATIVE);
+        poke.setData(Uri.parse("3"));
+        sendBroadcast(poke);
     }
 
     @Override
@@ -177,6 +167,7 @@ public class MainActivity extends ActionBarActivity  {
         FragmentTransaction fragmentTransaction =
                 getFragmentManager().beginTransaction();
         fragmentTransaction.add(R.id.scrollView, mMapFragment);
+        //       fragmentTransaction.commit();
         LatLng latLng = new LatLng(latitude, longitude);
 
         if (mMap == null) {
@@ -197,21 +188,18 @@ public class MainActivity extends ActionBarActivity  {
         mMap.setTrafficEnabled(true);
     }
 
-    private static void setUpMap() {
-        mMap.setMyLocationEnabled(true);
-        mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)).title("My Home").snippet("Home Address"));
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude,
-                longitude), 6.0f));
-    }
-
-
     public void checkMoving() {
-        SoundPool spool;
         Location location;
-        LocationManager locationManager;
-        locationManager = (LocationManager) this.getBaseContext().getSystemService(Context.LOCATION_SERVICE);
-        Location locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        Location locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        Location locationGPS = null;
+        Location locationNet = null;
+        LocationManager locationManager = (LocationManager) this.getBaseContext().getSystemService(Context.LOCATION_SERVICE);
+        try {
+            locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        } catch (SecurityException e) {
+
+        }
+
 
         long GPSLocationTime = 0;
         if (null != locationGPS) {
@@ -230,8 +218,8 @@ public class MainActivity extends ActionBarActivity  {
             location = locationNet;
         }
         location = new Location("Home");
-       location.setLatitude(50);
-        location.setLongitude(8);
+//             location.setLatitude(50);
+//             location.setLongitude(8);
         if (location != null) {
             Toast.makeText(context, "Your Location is - \nLat: " + location.getLatitude() + "\nLong: " + location.getLongitude(), Toast.LENGTH_LONG).show();
             longitudenew = location.getLongitude();
@@ -245,7 +233,7 @@ public class MainActivity extends ActionBarActivity  {
                 return;
             }
 
-            if ((System.currentTimeMillis() - begin > amountSec*1000L) && (counter == 0)) {
+            if ((System.currentTimeMillis() - begin > amountSec * 1000L) && (counter == 0)) {
                 notifyWear();
                 Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                 v.vibrate(5000);
@@ -277,8 +265,6 @@ public class MainActivity extends ActionBarActivity  {
                 makeCall();
                 counter++;
             }
-            else {
-            }
         }
     }
 
@@ -309,7 +295,11 @@ public class MainActivity extends ActionBarActivity  {
                 phoneIntent.setData(Uri.parse("tel:" + phone));
                 AudioManager audioService = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
                 audioService.setSpeakerphoneOn(true);
-                startActivity(phoneIntent);
+                try {
+                    startActivity(phoneIntent);
+                } catch (SecurityException e) {
+
+                }
             }
         }, 20000);
     }
@@ -317,13 +307,13 @@ public class MainActivity extends ActionBarActivity  {
 
     public void startRepeatingTask(View view) {
         begin = System.currentTimeMillis();
-        counter=0;
+        counter = 0;
         statusChecker.run();
         makeCall = true;
     }
 
     private void notifyWear() {
-        int notificationId = 001;
+        int notificationId = 1;
 
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(MainActivity.this)
@@ -337,7 +327,7 @@ public class MainActivity extends ActionBarActivity  {
         notificationManager.notify(notificationId, notificationBuilder.build());
     }
 
-    private void QuitApplication(){
+    private void QuitApplication() {
 
         int pid = android.os.Process.myPid();
         android.os.Process.killProcess(pid);

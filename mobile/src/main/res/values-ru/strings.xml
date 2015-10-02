@@ -13,4 +13,6 @@
     <string name="position_title">Вы здесь</string>
     <string name="actual_position">Актуальная позиция</string>
 
+    <string name="gps_activate_error">Ошибка активации GPS</string>
+
 </resources>

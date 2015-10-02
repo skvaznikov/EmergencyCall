@@ -1,1 +1,1 @@
-include ':mobile', ':emergencywearcall', ':myglass'
+include ':mobile', ':emergencywearcall'

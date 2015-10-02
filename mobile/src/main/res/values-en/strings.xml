@@ -13,4 +13,6 @@
     <string name="position_title">You are here</string>
     <string name="actual_position">Recent position</string>
 
+    <string name="gps_activate_error">Error activating GPS</string>
+
 </resources>
